@@ -56,10 +56,10 @@ module Swarm
 			# Open (SSL) TCP Socket to Peer
 			@tcp_socket = TCPSocket.open( @host, @port )
 			if @ssl
-#				@ssl_context = OpenSSL::SSL::SSLContext.new
-#				@ssl_context.cert = OpenSSL::X509::Certificate.new( File.open( @ssl_x509_certificate ) )
-#				@ssl_context.key  = OpenSSL::PKey::RSA.new( File.open( @ssl_x509_certificate_key ) )
-#				@ssl_context.ssl_version = :SSLv23
+				@ssl_context = OpenSSL::SSL::SSLContext.new
+				@ssl_context.cert = OpenSSL::X509::Certificate.new( File.open( node.ssl_x509_certificate ) )
+				@ssl_context.key  = OpenSSL::PKey::RSA.new( File.open( node.ssl_x509_certificate_key ) )
+				@ssl_context.ssl_version = :SSLv23
 				@ssl_socket = OpenSSL::SSL::SSLSocket.new( @tcp_socket, @ssl_context )
 				@ssl_socket.sync_close = true
 				@ssl_socket.connect
