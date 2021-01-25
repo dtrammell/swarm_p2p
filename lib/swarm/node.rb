@@ -119,8 +119,16 @@ module Swarm
 								# TODO: Collect a full JSON message
 								# TODO: Send message to message handler for message type
 							end
-						rescue
-							$stderr.puts $!
+						rescue => e
+							#$stderr.puts $!
+
+							case e
+								when EOFError
+									puts "Remote peer closed the connection."
+									exit
+								else
+									$stderr.puts e
+							end
 						end
 					}
 
