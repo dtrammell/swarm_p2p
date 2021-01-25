@@ -80,7 +80,7 @@ module Swarm
 		# Save the Peer List to disk
 		def peer_list_save
 			filename = Pathname.new( @mydir + '/peer_list.dat' )
-			File.open( filename, 'w+' ) do | f |
+			File.open( filename, 'w' ) do | f |
 				Marshal.dump( @peer_list, f )
 			end
 
