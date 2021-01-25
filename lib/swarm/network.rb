@@ -51,7 +51,7 @@ module Swarm
 			if ! filename.exist?
 				# Bootstrap Peer List
 				if @bootstrap_peer
-					self.peer_list_add( @boostrap_peer[:host], @bootstrap_peer[:port], @bootstrap_peer[:name], @bootstrap_peer[:uuid] )
+					self.peer_list_add( @bootstrap_peer[:host], @bootstrap_peer[:port], @bootstrap_peer[:name], @bootstrap_peer[:uuid] )
 				end
 
 				# File doesn't exist, initialize it
