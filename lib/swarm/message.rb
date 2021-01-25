@@ -9,7 +9,7 @@ module Swarm
 		attr_accessor :src, :dst, :message
 
 		# Initialization
-		def initialize( config )
+		def initialize( config = {} )
 
 			# Message Data
 			@message = {
