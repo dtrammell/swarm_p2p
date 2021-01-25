@@ -135,8 +135,8 @@ module Swarm
 							message.import_json( data )
 
 							# Verify the Peer announcement
-							connection.close if message.message[:data][:head][:type] != 'peer_management'
-							connection.close if message.message[:data][:head][:src].count > 1
+#							connection.close if message.message[:data][:head][:type] != 'peer_management'
+#							connection.close if message.message[:data][:head][:src].count > 1
 							# TODO: connect-back to advertised port to verify
 							
 							# Create a new Peer object for the Peer
