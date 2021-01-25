@@ -86,10 +86,13 @@ module Swarm
 				@server = @tcp_server
 			end
 
+			puts "Listening for incoming connections on port %d..." % @port
+
 			# Listening Loop
 			loop do
 				# Receive a Connection from a Peer
 				connection = @server.accept
+				puts "Received a connection..."
 
 				# Create a Thread for connecting Peer
 				t = Thread.new {
