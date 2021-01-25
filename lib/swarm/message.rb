@@ -53,7 +53,7 @@ module Swarm
 
 		def import_json( json )
 			# TODO: Validate message format before just importing it
-			@message = JSON.parse( json )
+			@message = JSON.parse( json, {:symbolize_names => true} )
 		end
 
 	end # class Message
