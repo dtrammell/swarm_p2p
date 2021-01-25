@@ -12,9 +12,10 @@ module Swarm
 		# Initialization
 		def initialize( config )
 			# Peer Metadata
-			@uuid = config[:uuid]
-			@name = config[:name]
-			@desc = config[:desc]
+			@name    = config[:name]
+			@uuid    = config[:uuid]
+			@version = nil
+			@desc    = config[:desc]
 
 			# System Configuration
 			$datadir ||= '/tmp/swarm'
@@ -29,10 +30,10 @@ module Swarm
 			end
 
 			# Network Variables
-			@host   = config[:host] || '34.232.133.253'
-			@port   = config[:port] || 3333
-			@ssl    = config[:ssl]  || true
-			@socket = nil
+			@host   = config[:host]   || '34.232.133.253'
+			@port   = config[:port]   || 3333
+			@ssl    = config[:ssl]    || true
+			@socket = config[:socket] || nil
 			@status = :disconnected
 			@ping   = nil
 
@@ -73,6 +74,10 @@ module Swarm
 			# TODO: Handshake & Trade IDs
 
 			# TODO: Validate Peer
+
+			@status = :connected
+
+			return true
 		end
 
 		# Disconnect
