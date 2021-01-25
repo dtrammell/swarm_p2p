@@ -59,6 +59,7 @@ module Swarm
 			@network_list      = []
 			@peer_list         = []
 			@messages_received = []
+			@messages_incoming = []
 
 			# Timestamps
 			@timestamps = {
