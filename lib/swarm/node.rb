@@ -277,7 +277,7 @@ module Swarm
 		def message_recv( data, peer )
 			# Put JSON message data back into a Message object
 			message = Swarm::Message.new
-			message.from_json( data )
+			message.import_json( data )
 
 			# Silently drop the message if we've already received it
 			@messages_received.each do | uuid |
