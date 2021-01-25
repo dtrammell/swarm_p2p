@@ -1,3 +1,4 @@
+require 'base64'
 require 'openssl'
 require 'securerandom'
 require 'socket'
@@ -33,6 +34,7 @@ module Swarm
 				puts ( "Node working directory '%s' does not exist... creating." % @mydir )
 				pathname.mkpath
 			end
+
 			# Network Variables
 			@host     = config[:host] || '127.0.0.1'
 			@port     = config[:port] || '3333'
@@ -48,6 +50,10 @@ module Swarm
 			# SSL Variables
 			@ssl_x509_certificate     = @mydir + '/' + config[:ssl_x509_certificate]
 			@ssl_x509_certificate_key = @mydir + '/' + config[:ssl_x509_certificate_key]
+
+			# Encryption Options
+			@sign_messages = config[:sign_messages] || false
+			@encrypt_messages = config[:encrypt_messages] || false
 
 			# Lists
 			@network_list = []
@@ -88,31 +94,41 @@ module Swarm
 
 			puts "Listening for incoming connections on port %d..." % @port
 
-			# Listening Loop
-			loop do
-				# Receive a Connection from a Peer
-				connection = @server.accept
-				puts "Received a connection..."
+			# Initialize a collector Array for peer threads
+			@thread_peers    = []
 
-				# Create a Thread for connecting Peer
-				t = Thread.new {
-					begin
-						# TODO: Connection Handshake
-						# TODO: Add remote peer to peers list
+			# Create a thread for the connection listener
+			@thread_listener = Thread.new {
+				# Listening Loop
+				loop do
+					# Receive a Connection from a Peer
+					connection = @server.accept
+					puts "Received a connection..."
 
-						# Read and Process Data
-						while ( line = connection.gets )
-							line = line.chomp
-							puts line if $DEBUG
+					# Create a Thread for connecting Peer
+					t = Thread.new {
+						begin
+							# TODO: Connection Handshake
+							# TODO: Add remote peer to peers list
 
-							# TODO: Collect a full JSON message
-							# TODO: Send message to message handler for message type
+							# Read and Process Data
+							while ( line = connection.gets )
+								line = line.chomp
+								puts line if $DEBUG
+
+								# TODO: Collect a full JSON message
+								# TODO: Send message to message handler for message type
+							end
+						rescue
+							$stderr.puts $!
 						end
-					rescue
-						$stderr.puts $!
-					end
-				}
-			end
+					}
+
+					# Add Peer Thread to peers thread collector
+					@thread_peers << t
+
+				end
+			}
 
 			return true
 		end
@@ -157,17 +173,31 @@ module Swarm
 		def broadcast( message )
 			# TODO: Step through Peers list and send data to each one
 			@peer_list.each do | peer |
-				peer.socket.puts( message )
+				peer.socket.puts( message.to_json )
 			end
 		end
 
 		# Send Message to Destination
 		def message_send( message )
-			# Add Node's UUID as source to Message
-			message.src << self.uuid
+			# Add Node's UUID as message source
+			message.message[:data][:head][:src] << self.uuid
+
+			if @sign_messages
+				# Sign only the data part of the message
+				sigbin = @ssl_context.key.sign( OpenSSL::Digest::SHA256.new, message.message[:data].to_json )
+
+				# Base64 encode the signature so that it can safely be convertd to JSON later, chomp the trailing \n
+				sigb64 = Base64.encode64( sigbin ).chomp
+
+				# Store a hash of the source UUID and its signature in the :sigs array of the message
+				message.message[:sigs] << {
+					:src => self.uuid,
+					:sig => sigb64
+				}
+			end
 
 			# If there is no destination peer specified, send to broadcast method and return
-			if message.dst.count < 1
+			if message.message[:data][:head][:dst].count < 1
 				return self.broadcast( message )
 			end
 
@@ -176,17 +206,22 @@ module Swarm
 
 			# Add peers to recipients list if we're directly connected to any destination peers
 			@peer_list.each do | peer |
-				@message.dst do | dst |
-					recipients << peer if peer[:uuid] == dst 
+				message.message[:data][:head][:dst].each do | dst |
+					recipients << peer if peer.uuid == dst 
 				end
 			end
 
-			# TODO: See if we know a route for any destination peers
+			# TODO: See if Node knows a route for any destination peers
+
+puts message.message[:data].to_json
 
 			# Send message to each recipient's socket
 			recipients.each do | r |
-				r.socket.puts( message )
+				puts "Sending message to recipient %s" % r.name
+				r.socket.puts( message.to_json )
 			end
+
+			return true
 		end
 
 		# Receive Data
