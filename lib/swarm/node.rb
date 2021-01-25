@@ -56,8 +56,9 @@ module Swarm
 			@encrypt_messages = config[:encrypt_messages] || false
 
 			# Lists
-			@network_list = []
-			@peer_list    = []
+			@network_list      = []
+			@peer_list         = []
+			@messages_received = []
 
 			# Timestamps
 			@timestamps = {
@@ -288,6 +289,9 @@ module Swarm
 			message.message[:sigs].each do | sig |
 				# TODO: Check to see if Peers list has a stored public key and verify the signature
 			end
+
+			# Message is valid, record it's UUID in the @messages_received list
+			@messages_received << message.message[:data][:body][:uuid]
 
 			# If the message is for this Node, send message to the message processing queue
 			notforme = true
