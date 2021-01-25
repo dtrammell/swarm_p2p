@@ -6,18 +6,33 @@ require 'thread'
 
 module Swarm
 	class Message
-		attr_reader   :uuid
-		attr_accessor :src, :dst, :data
+		attr_accessor :src, :dst, :message
 
 		# Initialization
 		def initialize( config )
-			# Message Metadata
-			@uuid = SecureRandom.uuid
-			@src  = [ nil ]
-			@dst  = [ config[:dst] ] || [ nil ]
 
 			# Message Data
-			@payload = config[:payload]
+			@message = {
+				:data => {
+					# Message Header
+ 					:head => {
+						:src  => [],
+						:dst  => config[:dst] || []
+					},
+					:body => {
+						# Message UUID
+						:uuid => SecureRandom.uuid,
+
+						# Message Payload Type
+						:type => config[:type] || nil,
+
+						# Message Payload
+						:payload => config[:payload]
+					}
+				},
+				:sigs => [
+				]
+			}
 
 			# Timestamps
 			@timestamps = {
@@ -25,21 +40,15 @@ module Swarm
 				:ack  => nil
 			}
 
-			@data = {
-				:uuid    => @uuid,
-				:payload => @payload
-			}
-
 			return true
 		end
 
 		def to_s
-			# TODO: Check for binary data, return hex if not string
-			return @data.to_s
+			self.to_json
 		end
 
 		def to_json
-			@data.to_json
+			@message.to_json
 		end
 
 	end # class Message
