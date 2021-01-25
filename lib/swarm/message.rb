@@ -51,5 +51,10 @@ module Swarm
 			@message.to_json
 		end
 
+		def import_json( json )
+			# TODO: Validate message format before just importing it
+			@message = JSON.parse( json )
+		end
+
 	end # class Message
 end # module Swarm
