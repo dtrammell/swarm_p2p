@@ -17,14 +17,15 @@ module Swarm
 					# Message Header
  					:head => {
 						:src  => [],
-						:dst  => config[:dst] || []
+						:dst  => config[:dst]  || [],
+						:type => config[:type] || :network
 					},
 					:body => {
 						# Message UUID
 						:uuid => SecureRandom.uuid,
 
 						# Message Payload Type
-						:type => config[:type] || nil,
+						:type => config[:payload_type] || nil,
 
 						# Message Payload
 						:payload => config[:payload]
