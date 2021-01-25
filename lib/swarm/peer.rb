@@ -11,7 +11,6 @@ module Swarm
 
 		# Initialization
 		def initialize( config )
-#		host, port, name, id = nil, desc = '' )
 			# Peer Metadata
 			@uuid = config[:uuid]
 			@name = config[:name]
