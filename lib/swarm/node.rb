@@ -110,14 +110,61 @@ module Swarm
 					# Create a Thread for connecting Peer
 					t = Thread.new {
 						begin
+							# Send the Peer announcement 
+							announcement = {
+								:name    => 'Swarm Node',
+								:uuid    => @uuid,
+								:version => $VERSION,
+								:desc    => @desc,
+								:cert    => @ssl_context.cert,
+								:port    => @port
+							}.to_json
+							message = Swarm::Message.new( {
+								:type         => 'peer_management',
+								:payload_type => 'json',
+								:payload      => announcement 
+							} )
+							connection.puts( message )
 
-							# TODO: Connection Handshake
-							# TODO: Add remote peer to peers list
-							peer = nil
+							# Get Peer network information from socket
+							sock_domain, peer_port, peer_host, peer_ip = connection.peeraddr
 
-							# Read and Process Data
-							while ( data = connection.gets )
-								data = data.chomp
+							# Receive the Peer announcement
+							data = connection.gets
+							message = Swarm::Message.new
+							message.import_json( data )
+
+							# Verify the Peer announcement
+							connection.close if message.message[:data][:head][:type] != 'peer_management'
+							connection.close if message.message[:data][:head][:src].count > 1
+							# TODO: connect-back to advertised port to verify
+							
+							# Create a new Peer object for the Peer
+							peer = Swarm::Peer.new( {
+								:name    => message.message[:data][:body][:name],
+								:uuid    => message.message[:data][:head][:src],
+								:version => message.message[:data][:body][:version],
+								:desc    => message.message[:data][:body][:desc],
+								:host    => peer_host,
+								:port    => message.message[:data][:body][:port],
+								:socket  => connection
+							} )
+
+							# Save the Peer's certificate
+							pathname = Pathname.new( peer.ssl_x509_certificate )
+							if ! pathname.exist?
+								# Create any missing path
+								pathname.mkpath
+							end
+							File.open( peer.ssl_x509_certificate, 'w' ) do | f |
+								f.write message.message[:data][:body][:cert]
+							end
+							
+							# Add remote peer to connected peers list
+							@peer_list << peer
+
+							# Read and Process Further Data
+							while ( data = connection.gets.chomp )
 								puts data.to_s if $DEBUG
 
 								# Send message to message handler
