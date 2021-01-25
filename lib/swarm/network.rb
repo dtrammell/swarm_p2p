@@ -112,40 +112,6 @@ module Swarm
 			return true
 		end
 
-		# Connect to the network as a Peer by connecting to up to @max_peers peers
-		def connect( node, num_peers = 5 )
-			puts 'Connecting Node to %d peers...' % num_peers
-
-			# Keep track of how many peers have successfully connected
-			peercount = 0
-
-			# Loop
-			loop do
-				# Pick a random peer from the peers list
-				randpeer = SecureRandom.rand(@peer_list.count)
-				puts 'Selected Peer #%d at random' % randpeer
-
-				# Iterate the Node's peer list and check if the randomly selected peer is already connected
-				node.peer_list.each do | peer |
-					# Next loop if this peer is already connected
-					next if peer[:uuid] == @peer_list[randpeer][:uuid]
-				end
-
-				# Create a Peer object for the peer
-				peer = Peer.new( @peer_list[randpeer] )
-
-				# Connect to the Peer
-				if peer.connect( node )
-					# If connected, add the Peer object to Node's peers list
-					node.peer_list << peer
-					peercount += 1
-				end
-
-				# Stop connecting if we've reached the min number of Peers allowed or have exhausted the Peer List
-				break if peercount > node.min_peers || peercount == @peer_list.count
-			end
-		end
-
 	end # Class Network
 end # Module Swarm
 
