@@ -38,7 +38,6 @@ module Swarm
 			# Network Variables
 			@host     = config[:host] || '127.0.0.1'
 			@port     = config[:port] || '3333'
-			@ssl      = config[:ssl]  || true
 			@socket   = nil
 			@status   = :disconnected
 			@ping     = nil
@@ -48,11 +47,24 @@ module Swarm
 			@min_peers = config[:min_peers] || 5
 
 			# SSL Variables
+			@ssl                      = config[:ssl] || true
 			@ssl_x509_certificate     = @mydir + '/' + config[:ssl_x509_certificate]
 			@ssl_x509_certificate_key = @mydir + '/' + config[:ssl_x509_certificate_key]
+			# Create SSL Key and Cert if they do not exist
+			pathname = Pathname.new( @ssl_x509_certificate_key )
+			if ! pathname.exist?
+				puts "No SSL key found, creating..."
+				key = OpenSSL::PKey::RSA.new( 2048 )
+				File.write( @ssl_x509_certificate_key, key.to_pem )
+				File.write( @ssl_x509_certificate,     key.public_key.to_pem )
+			end
+			@ssl_context              = OpenSSL::SSL::SSLContext.new
+			@ssl_context.ssl_version  = :SSLv23
+			@ssl_context.cert         = OpenSSL::X509::Certificate.new( File.open( @ssl_x509_certificate ) )
+			@ssl_context.key          = OpenSSL::PKey::RSA.new( File.open( @ssl_x509_certificate_key ) )
 
-			# Encryption Options
-			@sign_messages = config[:sign_messages] || false
+			# Message Encryption Options
+			@sign_messages    = config[:sign_messages]    || false
 			@encrypt_messages = config[:encrypt_messages] || false
 
 			# Lists
@@ -70,23 +82,43 @@ module Swarm
 			}
 
 			# Log Iniitalization
-			Syslog.info "Swarm v.%s Node %s Initialized." % [ $VERSION, @uuid ] 
+			Syslog.info "Swarm Node v.%s (UUID:%s) Initialized." % [ $VERSION, @uuid ] 
 
 			return true
 		end
 
-		# Listen for Incoming Peer Connections
-		def listen
+		# Listen for Messages on a Socket
+		def listen( socket )
+			begin
+				# Read and Process Further Data
+				while ( data = socket.gets.chomp )
+					puts data.to_s if $DEBUG
+				
+					# Send message to message handler
+					self.message_recv( data, peer )
+				end
+			rescue => e
+				#$stderr.puts $!
+
+				case e
+				when EOFError
+					# Peer closed, exit the thread
+					puts "Peer closed the socket."
+					exit
+				else
+					$stderr.puts e.message
+				end
+			end
+		end
+
+		# Setup TCP Server for Incoming Peer Connections
+		def server_start
 			# Create a TCP Server
 			# TODO: Add host/IP for multiple interfaces
 			@tcp_server = TCPServer.new( @port )
 
 			# Setup SSL context if SSL is enabled
 			if @ssl
-				@ssl_context = OpenSSL::SSL::SSLContext.new
-				@ssl_context.cert = OpenSSL::X509::Certificate.new( File.open( @ssl_x509_certificate ) )
-				@ssl_context.key  = OpenSSL::PKey::RSA.new( File.open( @ssl_x509_certificate_key ) )
-				@ssl_context.ssl_version = :SSLv23
 				@ssl_server = OpenSSL::SSL::SSLServer.new( @tcp_server, @ssl_context )
 				@server = @ssl_server
 			else
@@ -94,49 +126,36 @@ module Swarm
 				@server = @tcp_server
 			end
 
-			puts "Listening for incoming connections on port %d..." % @port
+			puts "Listening for incoming sockets on port %d..." % @port
 
 			# Initialize a collector Array for peer threads
 			@thread_peers    = []
 
-			# Create a thread for the connection listener
-			@thread_listener = Thread.new {
+			# Create a thread for the TCP Server
+			@server_thread = Thread.new {
 				# Listening Loop
 				loop do
 					# Receive a Connection from a Peer
-					connection = @server.accept
+					socket = @server.accept
 					puts "Received a connection..."
 
 					# Create a Thread for connecting Peer
 					t = Thread.new {
 						begin
-							# Send the Peer announcement 
-							announcement = {
-								:name    => 'Swarm Node',
-								:uuid    => @uuid,
-								:version => $VERSION,
-								:desc    => @desc,
-								:cert    => @ssl_context.cert,
-								:port    => @port
-							}.to_json
-							message = Swarm::Message.new( {
-								:type         => 'peer_management',
-								:payload_type => 'json',
-								:payload      => announcement 
-							} )
-							connection.puts( message )
+							# Send Node Announcement
+							self.announce( socket )
 
 							# Get Peer network information from socket
-							sock_domain, peer_port, peer_host, peer_ip = connection.peeraddr
+							sock_domain, peer_port, peer_host, peer_ip = socket.peeraddr
 
-							# Receive the Peer announcement
-							data = connection.gets
+							# Receive the Peer's Node Announcement
+							data = socket.gets
 							message = Swarm::Message.new
 							message.import_json( data )
 
 							# Verify the Peer announcement
-#							connection.close if message.message[:data][:head][:type] != 'peer_management'
-#							connection.close if message.message[:data][:head][:src].count > 1
+#							socket.close if message.message[:data][:head][:type] != 'peer_management'
+#							socket.close if message.message[:data][:head][:src].count > 1
 							# TODO: connect-back to advertised port to verify
 							
 							# Create a new Peer object for the Peer
@@ -145,9 +164,10 @@ module Swarm
 								:uuid    => message.message[:data][:head][:src],
 								:version => message.message[:data][:body][:version],
 								:desc    => message.message[:data][:body][:desc],
-								:host    => peer_host,
+								:host    => peer_ip,
 								:port    => message.message[:data][:body][:port],
-								:socket  => connection
+								:socket  => socket,
+								:thread  => t
 							} )
 
 							# Save the Peer's certificate
@@ -163,20 +183,16 @@ module Swarm
 							# Add remote peer to connected peers list
 							@peer_list << peer
 
-							# Read and Process Further Data
-							while ( data = connection.gets.chomp )
-								puts data.to_s if $DEBUG
+							# Listen on this socket for further data
+							self.listen( socket )
 
-								# Send message to message handler
-								self.message_recv( data, peer )
-							end
 						rescue => e
 							#$stderr.puts $!
 
 							case e
 								when EOFError
 									# Remote peer closed, exit the thread
-									puts "Remote peer closed the connection."
+									puts "Remote peer closed the socket."
 									exit
 								else
 									$stderr.puts e.message
@@ -191,6 +207,30 @@ module Swarm
 			}
 
 			return true
+		end
+
+		# Send a Node Announcement to Socket
+		def announce( socket )
+			# Craft the Node Announcement
+			announcement = {
+				:name    => 'Swarm Node',
+				:uuid    => @uuid,
+				:version => $VERSION,
+				:desc    => @desc,
+				:cert    => @ssl_context.cert,
+				:port    => @port
+			}.to_json
+			message = Swarm::Message.new( {
+				:type         => 'peer_management',
+				:payload_type => 'json',
+				:payload      => announcement 
+			} )
+
+			puts "Sending Peer Announcement:"
+			puts message
+
+			# Send the Node Announcement 
+			socket.puts( message )
 		end
 
 		# Add a Network to the Node
@@ -239,6 +279,9 @@ module Swarm
 					# If connected, add the Peer object to Node's peers list
 					@peer_list << peer
 					peercount += 1
+
+					# Create thread for listening on the socket
+					#TODO
 				end
 
             # Stop connecting if we've reached the min number of Peers allowed or have exhausted the Peer List
@@ -367,9 +410,9 @@ module Swarm
 			recipients = []
 
 			# Add peers to recipients list if we're directly connected to any destination peers
-			@peer_list.each do | peer |
+			@peer_list.each do | p |
 				message.message[:data][:head][:dst].each do | dst |
-					recipients << peer if peer.uuid == dst 
+					recipients << p if p.uuid == dst 
 				end
 			end
 
