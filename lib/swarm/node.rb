@@ -152,16 +152,19 @@ module Swarm
 							data = socket.gets
 							message = Swarm::Message.new
 							message.import_json( data )
+							puts "Received Peer's Node Announcement:"
+							puts message
 
 							# Verify the Peer announcement
 #							socket.close if message.message[:data][:head][:type] != 'peer_management'
 #							socket.close if message.message[:data][:head][:src].count > 1
-							# TODO: connect-back to advertised port to verify
+#							socket.close if message.message[:data][:head][:src][0] != message.message[:data][:body][:uuid],
+							# TODO: connect-back to advertised port to verify peer is listening
 							
 							# Create a new Peer object for the Peer
 							peer = Swarm::Peer.new( {
 								:name    => message.message[:data][:body][:name],
-								:uuid    => message.message[:data][:head][:src],
+								:uuid    => message.message[:data][:head][:src][0],
 								:version => message.message[:data][:body][:version],
 								:desc    => message.message[:data][:body][:desc],
 								:host    => peer_ip,
@@ -213,11 +216,10 @@ module Swarm
 		def announce( socket )
 			# Craft the Node Announcement
 			announcement = {
-				:name    => 'Swarm Node',
+				:name    => @name,
 				:uuid    => @uuid,
 				:version => $VERSION,
 				:desc    => @desc,
-				:cert    => @ssl_context.cert,
 				:port    => @port
 			}.to_json
 			message = Swarm::Message.new( {
