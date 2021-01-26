@@ -20,7 +20,7 @@ module Swarm
 
 			# System Configuration
 			$datadir ||= '/tmp/swarm'
-			@mydir     = $datadir + '/networks/' + @uuid
+			@mydir     = $datadir + '/peers/' + @uuid
 
 			# Multithreaded Variables
 			@thread = nil
