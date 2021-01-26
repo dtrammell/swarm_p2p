@@ -48,20 +48,35 @@ module Swarm
 
 			# SSL Variables
 			@ssl                      = config[:ssl] || true
-			@ssl_x509_certificate     = @mydir + '/' + config[:ssl_x509_certificate]
-			@ssl_x509_certificate_key = @mydir + '/' + config[:ssl_x509_certificate_key]
-			# Create SSL Key and Cert if they do not exist
-			pathname = Pathname.new( @ssl_x509_certificate_key )
-			if ! pathname.exist?
-				puts "No SSL key found, creating..."
-				key = OpenSSL::PKey::RSA.new( 2048 )
-				File.write( @ssl_x509_certificate_key, key.to_pem )
-				File.write( @ssl_x509_certificate,     key.public_key.to_pem )
-			end
+			@ssl_x509_certificate     = @mydir + '/cert.pem'
+			@ssl_x509_certificate_key = @mydir + '/priv.pem'
 			@ssl_context              = OpenSSL::SSL::SSLContext.new
 			@ssl_context.ssl_version  = :SSLv23
-			@ssl_context.cert         = OpenSSL::X509::Certificate.new( File.open( @ssl_x509_certificate ) )
-			@ssl_context.key          = OpenSSL::PKey::RSA.new( File.open( @ssl_x509_certificate_key ) )
+			# Load from file or create SSL Key and Cert if they do not exist
+			pathname = Pathname.new( @ssl_x509_certificate_key )
+			if pathname.exist?
+				@ssl_context.key = OpenSSL::PKey::RSA.new( File.read( @ssl_x509_certificate_key ) )
+			else
+				puts "No SSL private key found, creating..."
+				@ssl_context.key = OpenSSL::PKey::RSA.new( 4096 )
+				File.write( @ssl_x509_certificate_key, @ssl_context.key.to_pem )
+			end
+			pathname = Pathname.new( @ssl_x509_certificate )
+			if pathname.exist?
+				@ssl_context.cert         = OpenSSL::X509::Certificate.new( File.read( @ssl_x509_certificate ) )
+			else
+				puts "No SSL certificate found, creating..."
+				@ssl_context.cert = OpenSSL::X509::Certificate.new
+				@ssl_context.cert.version = 2
+				@ssl_context.cert.serial  = 0
+				@ssl_context.cert.not_before = Time.now
+				@ssl_context.cert.public_key = @ssl_context.key.public_key
+				name = OpenSSL::X509::Name.parse "CN=%s" % [ @uuid ]
+				@ssl_context.cert.subject = name
+				@ssl_context.cert.issuer  = name
+				@ssl_context.cert.sign( @ssl_context.key, OpenSSL::Digest::SHA256.new )
+				File.write( @ssl_x509_certificate, @ssl_context.cert.to_pem )
+			end
 
 			# Message Encryption Options
 			@sign_messages    = config[:sign_messages]    || false
