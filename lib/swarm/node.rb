@@ -163,12 +163,12 @@ module Swarm
 							
 							# Create a new Peer object for the Peer
 							peer = Swarm::Peer.new( {
-								:name    => message.message[:data][:body][:name],
-								:uuid    => message.message[:data][:body][:uuid],
-								:version => message.message[:data][:body][:version],
-								:desc    => message.message[:data][:body][:desc],
+								:name    => message.message[:data][:body][:payload][:name],
+								:uuid    => message.message[:data][:body][:payload][:uuid],
+								:version => message.message[:data][:body][:payload][:version],
+								:desc    => message.message[:data][:body][:payload][:desc],
 								:host    => peer_ip,
-								:port    => message.message[:data][:body][:port],
+								:port    => message.message[:data][:body][:payload][:port],
 								:socket  => socket,
 								:thread  => t
 							} )
