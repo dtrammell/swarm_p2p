@@ -164,7 +164,7 @@ module Swarm
 							# Create a new Peer object for the Peer
 							peer = Swarm::Peer.new( {
 								:name    => message.message[:data][:body][:name],
-								:uuid    => message.message[:data][:head][:src][0],
+								:uuid    => message.message[:data][:body][:uuid],
 								:version => message.message[:data][:body][:version],
 								:desc    => message.message[:data][:body][:desc],
 								:host    => peer_ip,
@@ -178,9 +178,8 @@ module Swarm
 							if ! pathname.exist?
 								# Create any missing path
 								pathname.mkpath
-							end
-							File.open( peer.ssl_x509_certificate, 'w' ) do | f |
-								f.write message.message[:data][:body][:cert]
+								# Write certificate to file
+								File.write( peer.ssl_x509_certificate, socket.peer_cert )
 							end
 							
 							# Add remote peer to connected peers list
