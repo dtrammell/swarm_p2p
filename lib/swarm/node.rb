@@ -83,7 +83,7 @@ module Swarm
 			@encrypt_messages = config[:encrypt_messages] || false
 
 			# Lists
-			@network_list      = []
+			@networks      = []
 			@peer_list         = []
 			@messages_received = []
 			@messages_incoming = []
@@ -178,14 +178,15 @@ module Swarm
 							
 							# Create a new Peer object for the Peer
 							peer = Swarm::Peer.new( {
-								:name    => message.message[:data][:body][:payload][:name],
-								:uuid    => message.message[:data][:body][:payload][:uuid],
-								:version => message.message[:data][:body][:payload][:version],
-								:desc    => message.message[:data][:body][:payload][:desc],
-								:host    => peer_ip,
-								:port    => message.message[:data][:body][:payload][:port],
-								:socket  => socket,
-								:thread  => t
+								:name     => message.message[:data][:body][:payload][:name],
+								:uuid     => message.message[:data][:body][:payload][:uuid],
+								:version  => message.message[:data][:body][:payload][:version],
+								:desc     => message.message[:data][:body][:payload][:desc],
+								:networks => message.message[:data][:body][:paylaod][:networks],
+								:host     => peer_ip,
+								:port     => message.message[:data][:body][:payload][:port],
+								:socket   => socket,
+								:thread   => t
 							} )
 
 							# Save the Peer's certificate
@@ -196,9 +197,15 @@ module Swarm
 								# Write certificate to file
 								File.write( peer.ssl_x509_certificate, socket.peer_cert )
 							end
-							
+
+							# Add peer to network peer list(s)
+							peer.networks.each do |net|
+								# Find matching network object in @networks list
+# TODO
+							end
+
 							# Add remote peer to connected peers list
-							@peer_list << peer
+							self.peer_add
 
 							# Listen on this socket for further data
 							self.listen( socket )
@@ -228,13 +235,20 @@ module Swarm
 
 		# Send a Node Announcement to Socket
 		def announce( socket )
+			# Collect just the network UUIDs from the @networks list
+			n = []
+			@networks.each do |net|
+				n << net.uuid
+			end
+
 			# Craft the Node Announcement
 			announcement = {
-				:name    => @name,
-				:uuid    => @uuid,
-				:version => $VERSION,
-				:desc    => @desc,
-				:port    => @port
+				:name     => @name,
+				:uuid     => @uuid,
+				:version  => $VERSION,
+				:desc     => @desc,
+				:port     => @port
+				:networks => n
 			}.to_json
 			message = Swarm::Message.new( {
 				:type         => 'peer_management',
@@ -252,13 +266,13 @@ module Swarm
 		# Add a Network to the Node
 		def network_add( network )
 			# TODO: Check for duplicates
-			@network_list << network
+			@networks << network
 		end
 
 		# Remove a configured Network from the Node
 		def network_del( network )
 			# Delete the network object from the list array
-			@network_list.delete( network )
+			@networks.delete( network )
 		end
 
 		# Connect to a Network
@@ -313,6 +327,11 @@ module Swarm
 			network.disconnect( self )
 		end
 
+		# Adde a Peer to the Peer List
+		def peer_add( peer )
+			@peer_list << peer
+		end
+
 		# Connect a Peer
 		def peer_connect( peer )
 			peer.connect
@@ -321,6 +340,10 @@ module Swarm
 		# Disconnect a Peer
 		def peer_disconnect( peer )
 			peer.disconnect
+		end
+
+		# Remove a Peer from the Peer List
+		def peer_del( peer )
 		end
 
 		# Broadcast Message 
