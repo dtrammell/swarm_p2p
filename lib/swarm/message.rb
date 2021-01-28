@@ -58,4 +58,18 @@ module Swarm
 		end
 
 	end # class Message
+
+	class MessageQueue
+		attr_accessor :inbound, :outbound
+
+		# Initialization
+		def initialize
+			@queue = {
+				:inbound  => []
+				:outbound => []
+			}
+		end
+
+
+	end
 end # module Swarm
