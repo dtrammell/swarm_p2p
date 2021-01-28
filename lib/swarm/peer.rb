@@ -13,10 +13,11 @@ module Swarm
 		# Initialization
 		def initialize( config )
 			# Peer Metadata
-			@name    = config[:name]
-			@uuid    = config[:uuid]
-			@version = nil
-			@desc    = config[:desc]
+			@name     = config[:name]     || 'Queen'
+			@uuid     = config[:uuid]     || '00000000-0000-0000-0000-000000000000'
+			@version  = nil
+			@desc     = config[:desc]     ||= @name
+			@networks = config[:networks] ||= [ '00000000-0000-0000-0000-000000000000' ]
 
 			# System Configuration
 			$datadir ||= '/tmp/swarm'
@@ -67,7 +68,6 @@ module Swarm
 				@ssl_socket            = OpenSSL::SSL::SSLSocket.new( @tcp_socket, @ssl_context )
 				@ssl_socket.sync_close = true
 				@ssl_socket.connect
-
 				@socket = @ssl_socket
 			else
 				@tcp_socket.connect
@@ -78,7 +78,7 @@ module Swarm
 			data = @socket.gets
 			message = Swarm::Message.new
 			message.import_json( data )
-			puts 'Received Peer Announcement:'
+			puts 'Received Peer\'s Node Announcement:'
 			puts message
 
 			# SSL Stuff
@@ -87,24 +87,27 @@ module Swarm
 				if pathname.exist?
 					# There is a cached SSL certificate, compare it to connection's certificate
 					cached_cert = OpenSSL::X509::Certificate.new( File.read( @ssl_x509_certificate ) )
-				
 					if cached_cert != @ssl_socket.peer_cert
 						puts "WARNING: Cached Peer SSL certificate does NOT match connection's certificate!"
 					end
 				else
 					# If there is no certificate cached, store the one from the connection
 					puts "No cached SSL certificate for Peer %s, saving connection's certificate..." % @uuid
-					File.write( @ssl_x509_certificate, @ssl_socket.peer_cert )
+					File.write( @ssl_x509_certificate, @ssl_socket.peer_cert.to_pem )
 				end
 			end
+
+			# TODO: Validate Peer
 
 			# Send a Node Announcement to Peer
 			node.announce( @socket )
 
-			# TODO: Validate Peer
-
+			# Set Peer status to connected
 			@status = :connected
-			
+
+			# Add Peer to Node's connected peers list
+			node.peers_list << self
+
 			# Create a new thread to listen to the Peer's socket
 			t = Thread.new {
 				node.listen( @socket )
