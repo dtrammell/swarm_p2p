@@ -106,7 +106,7 @@ module Swarm
 			@status = :connected
 
 			# Add Peer to Node's connected peers list
-			node.peers_list << self
+			node.peer_list << self
 
 			# Create a new thread to listen to the Peer's socket
 			t = Thread.new {
