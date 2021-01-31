@@ -75,8 +75,7 @@ module Swarm
 				name = OpenSSL::X509::Name.parse "CN=%s" % [ @uuid ]
 				@ssl_context.cert.subject = name
 				@ssl_context.cert.issuer  = name
-				#@ssl_context.cert.sign( @ssl_context.key, OpenSSL::Digest::SHA256.new )
-				@ssl_context.cert.sign( @ssl_context.key, OpenSSL::Digest::SHA1.new )
+				@ssl_context.cert.sign( @ssl_context.key, OpenSSL::Digest::SHA256.new )
 				File.write( @ssl_x509_certificate, @ssl_context.cert.to_pem )
 			end
 
