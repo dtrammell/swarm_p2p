@@ -78,6 +78,9 @@ module Swarm
 				File.write( @ssl_x509_certificate, @ssl_context.cert.to_pem )
 			end
 
+			# Message queueing
+			@message_queue = Swarm::MessageQueue.new( self )
+
 			# Message Encryption Options
 			@sign_messages    = config[:sign_messages]    || false
 			@encrypt_messages = config[:encrypt_messages] || false
@@ -85,8 +88,6 @@ module Swarm
 			# Lists
 			@networks      = []
 			@peer_list         = []
-			@messages_received = []
-			@messages_incoming = []
 
 			# Timestamps
 			@timestamps = {
@@ -346,24 +347,13 @@ module Swarm
 		def peer_del( peer )
 		end
 
-		# Broadcast Message 
-		def broadcast( message, exclude_peer = nil )
-			# Step through Peers list and send data to each one (except exclude_peer, this prevents sending messages back to where they came from)
-			@peer_list.each do | peer |
-				if exclude_peer
-					peer.socket.puts( message.to_json ) if peer.uuid != exclude_peer.uuid
-				else
-					peer.socket.puts( message.to_json )
-				end
-			end
-		end
-
 		# Send Message to Destination
 		def message_send( message )
 			# Add Node's UUID as message source
 			message.message[:data][:head][:src] << self.uuid
 
 			if @sign_messages
+				# TODO: Use OpenSSL signing functionality here
 				# Sign only the data part of the message
 				sigbin = @ssl_context.key.sign( OpenSSL::Digest::SHA256.new, message.message[:data].to_json )
 
@@ -377,31 +367,8 @@ module Swarm
 				}
 			end
 
-			# If there is no destination peer specified, send to broadcast method and return
-			if message.message[:data][:head][:dst].count < 1
-				return self.broadcast( message )
-			end
-
-			# Initialize list of recipient peers to send message to
-			recipients = []
-
-			# Add peers to recipients list if we're directly connected to any destination peers
-			@peer_list.each do | peer |
-				message.message[:data][:head][:dst].each do | dst |
-					recipients << peer if peer.uuid == dst 
-				end
-			end
-
-			# TODO: See if Node knows a route for any destination peers
-
-			# Send message to each recipient's socket
-			recipients.each do | r |
-				puts "Sending message to recipient %s" % r.name
-				# TODO: Send marshalled instead of json
-				r.socket.puts( message.to_json )
-			end
-
-			return true
+			# Add message to the outbound message queue
+			@message_queue.outbound << message
 		end
 
 		# Receive a Message
@@ -410,62 +377,11 @@ module Swarm
 			message = Swarm::Message.new
 			message.import_json( data )
 
-			# Silently drop the message if we've already received it
-			@messages_received.each do | uuid |
-				return true if uuid == message.message[:data][:body][:uuid]
-			end
+			# Set relay in message header so the queue processor knows who passed us this message
+			message.message[:data][:head][:relay] = peer.host
 
-			# Verify any signatures attached to message and reject bad messages
-			message.message[:sigs].each do | sig |
-				# TODO: Check to see if Peers list has a stored public key and verify the signature
-			end
-
-			# Message is valid, record it's UUID in the @messages_received list
-			@messages_received << message.message[:data][:body][:uuid]
-
-			# If the message is for this Node, send message to the message processing queue
-			notforme = true
-			message.message[:data][:head][:dst].each do | dst |
-				if @uuid == dst
-					notforme = false
-					@messages_incoming << message 
-				end
-			end
-
-			# If the message is not for this Node or was a broadcast, propigate it
-			self.message_forward( message, peer ) if notforme
-		end
-
-		# Forward a Message
-		def message_forward( message, peer )
-			puts "Forwarding message..."
-
-			# If there is no destination peers specified, send to broadcast method and return
-			if message.message[:data][:head][:dst].count < 1
-				return self.broadcast( message, peer )
-			end
-
-			# Initialize list of recipient peers to send message to
-			recipients = []
-
-			# Add peers to recipients list if we're directly connected to any destination peers
-			@peer_list.each do | p |
-				message.message[:data][:head][:dst].each do | dst |
-					recipients << p if p.uuid == dst 
-				end
-			end
-
-			# TODO: See if Node knows a route for any destination peers
-
-			# Send message to each recipient's socket
-			recipients.each do | r |
-				puts "Sending message to recipient %s" % r.name
-				# TODO: Send marshalled instead of json
-				r.socket.puts( message.to_json )
-			end
-
-			return true
-			
+			# Add message to the @incoming message queue
+			@message_queue.inbound << message
 		end
 
 	end # Class Node
