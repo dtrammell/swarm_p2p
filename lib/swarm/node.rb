@@ -87,7 +87,7 @@ module Swarm
 			@encrypt_messages = config[:encrypt_messages] || false
 
 			# Lists
-			@networks      = []
+			@network_list      = []
 			@peer_list         = []
 
 			# Timestamps
@@ -202,7 +202,7 @@ module Swarm
 
 							# Add peer to network peer list(s)
 							peer.networks.each do |net|
-								# Find matching network object in @networks list
+								# Find matching network object in @network_list list
 # TODO
 							end
 
@@ -237,9 +237,9 @@ module Swarm
 
 		# Send a Node Announcement to Socket
 		def announce( socket )
-			# Collect just the network UUIDs from the @networks list
+			# Collect just the network UUIDs from the @network_list list
 			n = []
-			@networks.each do |net|
+			@network_list.each do |net|
 				n << net.uuid
 			end
 
@@ -268,13 +268,13 @@ module Swarm
 		# Add a Network to the Node
 		def network_add( network )
 			# TODO: Check for duplicates
-			@networks << network
+			@network_list << network
 		end
 
 		# Remove a configured Network from the Node
 		def network_del( network )
 			# Delete the network object from the list array
-			@networks.delete( network )
+			@network_list.delete( network )
 		end
 
 		# Connect to a Network
@@ -293,6 +293,12 @@ module Swarm
 
 			# Loop
 			loop do
+				# Stop connecting if there are no peers known
+				if network.peer_list.count == 0
+					puts 'No peers known, aborting connections.'
+					return false
+				end
+
 				# Pick a random peer from the peers list
 				randpeer = SecureRandom.rand(network.peer_list.count)
 				puts 'Selected Peer #%d at random' % randpeer
