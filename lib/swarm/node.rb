@@ -357,7 +357,7 @@ module Swarm
 		# Send Message to Destination
 		def message_send( message )
 			# Add Node's UUID as message source
-			message.message[:data][:head][:src] << self.uuid
+			message.src << self.uuid
 
 			if @sign_messages
 				# TODO: Use OpenSSL signing functionality here
