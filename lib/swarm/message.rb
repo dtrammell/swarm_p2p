@@ -68,12 +68,12 @@ module Swarm
 			@node = node
 
 			# Initialize message queues
-			@inbound  => []
-			@outbound => []
+			@inbound  = []
+			@outbound = []
 
 			# List of messages seen (pruned to just UUIDs)
-			@inbound_seen      => []
-			@inbound_processed => []
+			@inbound_seen      = []
+			@inbound_processed = []
 
 			# Start processing messages
 			self.process
@@ -86,18 +86,18 @@ module Swarm
 				# Master Loop
 				loop do
 					# Send a message if there is a message in the @outbound queue
-					self.send if @outbound > 0
+					self.send if @outbound.count > 0
 
 					# Receive a message if there is a message in the @inbound queue
-					self.recv if @inbound  > 0
+					self.recv if @inbound.count  > 0
 
 					# Prune the seen list to max cache amount
-					while @inbound.seen.count > 1000
+					while @inbound_seen.count > 1000
 						@inbound_seen.shift
 					end
 
 					# Prune the processed list to max cache amount
-					while @inbound.processed.count > 25000
+					while @inbound_processed.count > 25000
 						@inbound_processed.shift
 					end
 				end
