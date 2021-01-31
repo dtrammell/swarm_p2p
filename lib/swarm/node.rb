@@ -70,11 +70,13 @@ module Swarm
 				@ssl_context.cert.version = 2
 				@ssl_context.cert.serial  = 0
 				@ssl_context.cert.not_before = Time.now
+				@ssl_context.cert.not_after  = @ssl_context.cert.not_before + (1 * 365 * 24 * 60 * 60) # default 1 year
 				@ssl_context.cert.public_key = @ssl_context.key.public_key
 				name = OpenSSL::X509::Name.parse "CN=%s" % [ @uuid ]
 				@ssl_context.cert.subject = name
 				@ssl_context.cert.issuer  = name
-				@ssl_context.cert.sign( @ssl_context.key, OpenSSL::Digest::SHA256.new )
+				#@ssl_context.cert.sign( @ssl_context.key, OpenSSL::Digest::SHA256.new )
+				@ssl_context.cert.sign( @ssl_context.key, OpenSSL::Digest::SHA1.new )
 				File.write( @ssl_x509_certificate, @ssl_context.cert.to_pem )
 			end
 
@@ -248,7 +250,7 @@ module Swarm
 				:uuid     => @uuid,
 				:version  => $VERSION,
 				:desc     => @desc,
-				:port     => @port
+				:port     => @port,
 				:networks => n
 			}.to_json
 			message = Swarm::Message.new( {
