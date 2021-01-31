@@ -6,7 +6,8 @@ require 'thread'
 
 module Swarm
 	class Message
-		attr_accessor :src, :dst, :message
+		attr_reader :uuid
+		attr_accessor :src, :dst
 
 		# Initialization
 		def initialize( config = {} )
@@ -35,6 +36,11 @@ module Swarm
 				]
 			}
 
+			# Accessor shortcuts
+			@src  = @message[:data][:head][:src]
+			@dst  = @message[:data][:head][:dst]
+			@uuid = @message[:data][:body][:uuid]
+
 			# Timestamps
 			@timestamps = {
 				:sent => nil,
@@ -44,14 +50,17 @@ module Swarm
 			return true
 		end
 
+		# Export to string (json)
 		def to_s
 			self.to_json
 		end
 
+		# Export to JSON
 		def to_json
 			@message.to_json
 		end
 
+		# Import values from JSON
 		def import_json( json )
 			# TODO: Validate message format before just importing it
 			@message = JSON.parse( json, {:symbolize_names => true} )
@@ -83,6 +92,8 @@ module Swarm
 		def process
 			# Start a new child Thread
 			t = Thread.new {
+				puts 'Started new thread for message processing.'
+
 				# Master Loop
 				loop do
 					# Send a message if there is a message in the @outbound queue
@@ -122,8 +133,10 @@ module Swarm
 			message = @outbound.shift
 			return false if message == nil
 
+			puts "Sending message $s" % message.uuid
+
 			# Broadcast if no recipients specified (broadcast message)
-			self.broadcast( message ) if message.message[:data][:head][:dst].count == 0
+			self.broadcast( message ) if message.dst.count == 0
 
 			###
 			# Try to minimize network traffic by identifying exact peers matching recipients
@@ -134,7 +147,7 @@ module Swarm
 
 			# Add peers to recipients list if we're directly connected to any destination peers
 			matches = 0
-			message.message[:data][:head][:dst].each do | dst |
+			message.dst.each do | dst |
 				@node.peer_list.each do | peer |
 					recipients << peer if peer.uuid == dst
 					matches += 1
@@ -145,7 +158,7 @@ module Swarm
 			# Increment matches if found
 
          # Send message only to each destination Peer's socket if all recipients reachable
-			if message.message[:data][:head][:dst].count == matches
+			if message.dst.count == matches
          	recipients.each do | peer |
             	puts "Sending message to recipient %s" % peer.name
             	peer.socket.puts( message.to_json )
@@ -163,6 +176,8 @@ module Swarm
 			# Get the oldest message in the array
 			message = @inbound.shift
 			return false if message == nil
+
+			puts "Receiving message %s" % message.uuid
 
 			# Ignore if we've seen or processed this message before (rebroadcast)
 			return true if @inbound_seen.include? message.message[:data][:body][:uuid]
