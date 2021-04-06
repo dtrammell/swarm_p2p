@@ -1,0 +1,4 @@
+.git
+.*.swp
+*.gem
+Gemfile.lock

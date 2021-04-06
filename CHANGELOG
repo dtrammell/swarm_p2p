@@ -1,0 +1,20 @@
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## [0.0.2.pre] - 2021-03-25
+### Added
+- Pre-release setup for Gem foundation work
+- Re-named Swarm to SwarmP2P due to gem collision
+- Added gemspec
+- Added CHANGELOG.md
+- Added VERSION
+- Started re-work of Message object to utilize fewer @ vars and hashes
+- Added crypto-lite
+- Added SQLite
+- Added YARD
+- Started YARD docs
+- Added minimal README
+- Added plugin module
+- Added some minimal framework for examples, not fully functional yet

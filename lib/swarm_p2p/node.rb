@@ -5,7 +5,7 @@ require 'socket'
 require 'syslog'
 require 'thread'
 
-module Swarm
+module SwarmP2P
 	class Node
 		attr_reader   :name, :uuid, :host, :port
 		attr_reader   :min_peers, :max_peers
@@ -79,8 +79,13 @@ module Swarm
 				File.write( @ssl_x509_certificate, @ssl_context.cert.to_pem )
 			end
 
+			# Public Key for Transport & Signing
+			# @todo Horse cart issue here, UUID is used to set/retrieve the key
+			@public_key = @ssl_context.key.public_key
+			@public_key_uuid = rmd160(@public_key.to_s)
+
 			# Message queueing
-			@message_queue = Swarm::MessageQueue.new( self )
+			@message_queue = SwarmP2P::MessageQueue.new( self )
 
 			# Message Encryption Options
 			@sign_messages    = config[:sign_messages]    || false
@@ -179,7 +184,7 @@ module Swarm
 							# TODO: connect-back to advertised port to verify peer is listening
 							
 							# Create a new Peer object for the Peer
-							peer = Swarm::Peer.new( {
+							peer = SwarmP2P::Peer.new( {
 								:name     => message.message[:data][:body][:payload][:name],
 								:uuid     => message.message[:data][:body][:payload][:uuid],
 								:version  => message.message[:data][:body][:payload][:version],
@@ -280,7 +285,7 @@ module Swarm
 		# Connect to a Network
 		def network_connect( network )
 			# Validate method argument
-			raise 'Invalid parameter: Expecting Swarm::Network object' if ! network.is_a?(Swarm::Network)
+			raise 'Invalid parameter: Expecting Swarm::Network object' if ! network.is_a?(SwarmP2P::Network)
 
 			# Add network to node if it hasn't been already
 			self.network_add( network )
@@ -381,7 +386,7 @@ module Swarm
 		# Receive a Message
 		def message_recv( data, peer )
 			# Put JSON message data back into a Message object
-			message = Swarm::Message.new
+			message = SwarmP2P::Message.new
 			message.import_json( data )
 
 			# Set relay in message header so the queue processor knows who passed us this message

@@ -6,7 +6,7 @@ require 'socket'
 # Module Swarm
 #
 
-module Swarm
+module SwarmP2P
 	###
 	# Class Network
 	#

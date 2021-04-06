@@ -4,70 +4,7 @@ require 'socket'
 require 'openssl'
 require 'thread'
 
-module Swarm
-	class Message
-		attr_reader :uuid
-		attr_accessor :src, :dst
-
-		# Initialization
-		def initialize( config = {} )
-
-			# Message Data
-			@message = {
-				:data => {
-					# Message Header
- 					:head => {
-						:src  => [],
-						:dst  => config[:dst]  || [],
-						:type => config[:type] || :network
-					},
-					:body => {
-						# Message UUID
-						:uuid => SecureRandom.uuid,
-
-						# Message Payload Type
-						:type => config[:payload_type] || nil,
-
-						# Message Payload
-						:payload => config[:payload]
-					}
-				},
-				:sigs => [
-				]
-			}
-
-			# Accessor shortcuts
-			@src  = @message[:data][:head][:src]
-			@dst  = @message[:data][:head][:dst]
-			@uuid = @message[:data][:body][:uuid]
-
-			# Timestamps
-			@timestamps = {
-				:sent => nil,
-				:ack  => nil
-			}
-
-			return true
-		end
-
-		# Export to string (json)
-		def to_s
-			self.to_json
-		end
-
-		# Export to JSON
-		def to_json
-			@message.to_json
-		end
-
-		# Import values from JSON
-		def import_json( json )
-			# TODO: Validate message format before just importing it
-			@message = JSON.parse( json, {:symbolize_names => true} )
-		end
-
-	end # class Message
-
+module SwarmP2P
 	class MessageQueue
 		attr_accessor :inbound, :outbound
 

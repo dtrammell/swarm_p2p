@@ -1,0 +1,32 @@
+PATH
+  remote: .
+  specs:
+    swarm_p2p (0.0.2.pre)
+      base58-alphabets (>= 0.0.1)
+      crypto-lite (>= 0.0.1)
+      sqlite3 (>= 1.4)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    base32-alphabets (1.2.0)
+    base58-alphabets (1.0.0)
+    crypto-lite (0.3.0)
+      base32-alphabets
+      base58-alphabets
+      digest-sha3-patched
+      elliptic
+    digest-sha3-patched (1.1.1)
+    elliptic (1.0.2)
+    sqlite3 (1.4.2)
+    yard (0.9.26)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  swarm_p2p!
+  yard (>= 0.9)
+
+BUNDLED WITH
+   2.1.4

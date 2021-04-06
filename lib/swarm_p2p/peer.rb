@@ -3,7 +3,7 @@ require 'socket'
 require 'openssl'
 require 'thread'
 
-module Swarm
+module SwarmP2P
 	class Peer
 		attr_reader   :name, :uuid, :version, :host, :port
 		attr_accessor :desc

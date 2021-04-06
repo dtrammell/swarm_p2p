@@ -1,13 +1,9 @@
 #!/usr/bin/ruby
 
-require './lib/swarm.rb'
-require './lib/swarm/message.rb'
-require './lib/swarm/network.rb'
-require './lib/swarm/node.rb'
-require './lib/swarm/peer.rb'
+require './lib/swarm_p2p'
 
 # Global Configuration
-$datadir = Dir.home + '/.swarm'
+$datadir = Dir.home + '/.swarm_p2p'
 
 # Node Configuration
 config = {
@@ -16,7 +12,7 @@ config = {
 }
 
 # Create the Node
-@node = Swarm::Node.new( config )
+@node = SwarmP2P::Node.new( config )
 
 # Network Configuration
 netconfig = {
@@ -32,7 +28,7 @@ netconfig = {
 netconfig[:datadir] = $datadir
 
 # Create the Network
-@network = Swarm::Network.new( netconfig )
+@network = SwarmP2P::Network.new( netconfig )
 
 # Connect to Network
 @node.network_connect( @network )
@@ -48,7 +44,7 @@ msgconfig = {
 	:payload_type => :ascii,
 	:payload      => 'This is a TEST MESSAGE'
 }
-message = Swarm::Message.new( msgconfig )
+message = SwarmP2P::Message.new( msgconfig )
 puts message
 @node.message_send( message )
 
@@ -59,7 +55,7 @@ msgconfig = {
 	:payload_type => :ascii,
 	:payload      => 'This is a BROADCAST TEST MESSAGE'
 }
-message = Swarm::Message.new( msgconfig )
+message = SwarmP2P::Message.new( msgconfig )
 puts message
 @node.message_send( message )
 
