@@ -12,6 +12,9 @@ module SwarmP2P
 	#
 
 	class Network
+
+		CURRENT_VERSION = '1.0.0'
+		
 		# Attribute Accessors
 		attr_reader :name, :uuid, :desc
 		attr_reader :peer_list
@@ -42,49 +45,7 @@ module SwarmP2P
 			@bootstrap_peer = config[:bootstrap_peer]
 
 			# Load cached Peer List from File
-			self.peer_list_load
-		end
-
-		# Load the Peer List from disk
-		def peer_list_load
-			filename = Pathname.new( @mydir + '/peer_list.dat' )
-			if ! filename.exist?
-				# Bootstrap Peer List
-				if @bootstrap_peer
-					self.peer_list_add( @bootstrap_peer[:host], @bootstrap_peer[:port], @bootstrap_peer[:name], @bootstrap_peer[:uuid] )
-				end
-
-				# File doesn't exist, initialize it
-				message = "Warning: Peer List File '%s' NOT FOUND; Initializing" % filename
-				puts( message )
-
-				# Write Peer List hash to file
-				self.peer_list_save
-
-				return false
-			else
-				File.open( filename ) do | f |
-					@peer_list = Marshal.load( f )
-				end
-				message = "Loaded Peer List '%s' (%d records)" % [ filename, @peer_list.count ]
-				puts ( message )
-				if $VERBOSE
-					puts "%s:" % filename
-					pp @peer_list.inspect
-				end
-			end
-
-			return true
-		end
-
-		# Save the Peer List to disk
-		def peer_list_save
-			filename = Pathname.new( @mydir + '/peer_list.dat' )
-			File.open( filename, 'w' ) do | f |
-				Marshal.dump( @peer_list, f )
-			end
-
-			return true
+#			self.peer_list_load
 		end
 
 		# Add a Peer to Peer List
@@ -107,11 +68,10 @@ module SwarmP2P
 			end
 
 			# Not found in list, add Peer to the Peer List
-			@peer_list << peer 
+			@peer_list << peer
 
 			return true
 		end
 
 	end # Class Network
 end # Module Swarm
-

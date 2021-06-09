@@ -1,39 +1,37 @@
 # Project: SwarmP2P
 # @see https://github.com/dtrammell/swarm_p2p
 # @author Dustin T., Donovan A.
-# 
+#
 # Base message object. Creation and conversion methods.
 #
-# Message format is as follows: 
-#     head: 
-#       src: Origin drone
-#       dst: Destination(s) addresses,
-#       type: Type of message.  Default is :network 
-#       uuid: Mesage unique universal ID
-#       sent: Timestamp of message origin.  Informative, not trustable for now
-#       signatures: Signature for verification against src and contents
+# Message format is as follows:
+#     head:
+#       	src: Origin node
+#       	dst: Destination(s) addresse(s)
+#       	type: Type of message.  Default is :network.  Options are :network, :swarm
+#					command: What RPC command to run with the message payload.
+#       	uuid: Mesage unique universal ID
+#       	sent: Timestamp of message origin.  Informative, not trustable for now
+#				last_peers: List of peers this message is being sent to from this node.
+#	      signatures: Signature for verification against src and contents
 #     body:
-#       payload_type: Payload type, application specified
-#       payload: Message content
+#       	payload_type: Payload type, application specified
+#       	payload: Message content
 #
 require 'json'
 require 'securerandom'
 
 module SwarmP2P
 	class Message
-		attr_reader :uuid, :head, :body
-		#attr_accessor :
+		attr_reader :uuid, :head, :body, :timestamps
+		attr_accessor :last_from
 
 		# Initialization
 		# @param [Hash] config Message parameters
-		# @option config [String] :type [optional] Type of message, defaults to :network 
-		# @option config [String] :dst [optional] The destination address. If not provided, broadcast to Network.
-		# @option config [String] :payload_type [optional] Message payload type label. 
-		# @option config [String] :payload Message content.
 		#
 		def initialize( config = {} )
-			@head = (config)
-		        @body = (config)	
+			self.head = config
+		  self.body = config
 
 			# Timestamps
 			@timestamps = {
@@ -45,7 +43,7 @@ module SwarmP2P
 		end
 
 		# Sign a message via mechanism provided by code block
-		# @param 
+		# @param
 		#
 		def sign_content(&block)
 			self.head.signatures << [uuid,yield(content)]
@@ -55,23 +53,40 @@ module SwarmP2P
 		# @todo Application message and protocol message should probably be different objects
 		#
 		def content
-			{
+			OpenStruct.new({
 				uuid: head.uuid,
 				sent: head.sent,
-				content_type: body.payload_type,
-				content: body.payload
-			}
+				src: head.src,
+				content_type: body.payload_type ,
+				content: body.payload #Base64.decode64(body.payload)
+			})
+		end
+
+		# Shortcut for uuid
+		def uuid
+			head.uuid
+		end
+
+		# Shortcut to obj.body.payload_type
+		def payload_type
+			body.payload_type
+		end
+
+		# Shortcut to obj.body.payload_type
+		def payload
+			#Base64.decode64(
+			body.payload
 		end
 
 		# Message as a hash
 		# @return [Hash] Message object as a hash
-		# @see SwarmP2P::Message docuemntation 
+		# @see SwarmP2P::Message docuemntation
 		#
 		def to_h
 			{
-			    head: head.to_h,
-			    body: body.to_h 
-                        }
+			  head: head.to_h,
+			  body: body.to_h
+      }
 		end
 
 		# Export to string (json)
@@ -94,21 +109,23 @@ module SwarmP2P
 		#
 		def self.from_json( json )
 			# TODO: Validate message format before just importing it
-			json = JSON.parse( json, {:symbolize_names => true} )
-			new(json[:head].merge(json[:body]))
+			pjson = JSON.parse( json, {:symbolize_names => true} )
+			Message.new(pjson[:head].merge(pjson[:body]))
 		end
 
-private
+#private
 
 		# Primitive object for header data.  Working with methods, rather than nested
 		# hashes is preferable, but Swarm doesn't yet need dedicated head/body classes.
 		def head=(opts={})
-			OpenStruct.new({
-			  uuid: SecureRandom.uuid,
+			@head = OpenStruct.new({
+			  uuid: opts[:uuid] || SwarmP2P.generate_uuid,
 			  src: opts[:src] || [],
 			  dst: opts[:dst] || [],
-			  type: opts[:type] || :network,
+			  command: opts[:command] || 'data_package',
+				parameters: opts[:parameters] || [],
 			  sent: opts[:sent] || Time.now,
+			  last_peers: opts[:peers] || [],
 			  signatures: [],
 			})
 		end
@@ -116,10 +133,14 @@ private
 		# Primitive object for header data.  Working with methods, rather than nested
 		# hashes is preferable, but Swarm doesn't yet need dedicated head/body classes.
 		def body=(opts={})
-			OpenStruct.new({
+			@body = OpenStruct.new({
 			  payload_type: opts[:payload_type] || nil,
-			  payload: opts[:payload] || '',
+			  payload: opts[:payload] || '' #Base64.encode64(opts[:payload] || ''),
 			})
+		end
+
+		def payload=(v)
+			body.payload = v #Base64.encode64(v)
 		end
 
 	end # class Message

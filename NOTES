@@ -1,0 +1,34 @@
+* Worked on message handlers (server,client)
+--> Has included threaded startup or caller can iterate process within some
+    other framework (no plans to build in plugins for this one)
+--> The way it works is protocol reads from client, adds a process command, peer, and message to queue
+ --> The message handler processes the message format (this allows each handler plugin to dictate the format).
+ --> Message includes the cmd, which is treated like an RPC call, added back to the queue, next process,
+			runs rpc cmd
+ --> RPC commands can queue outbound commands and/or add another command call to the stack
+   --> This allows things like processing large data requests in chunks, such as peer_list_requests
+--> Obviously the plugin architecture, like the others, allows a few different things to be done:
+  --> testing ... doesn't even really require a socket to test, as that can be fudged with any IO appearing object
+  --> versions and different kinds of message protocols
+  --> modular to code with ... multiple message queue handling threads, etc.
+--> Handler is the one that has access to node, hive, and protocol
+--> using this RPC method, we can easily chunk things into multiple passes, we can hanlde peer negotiation requests
+  in different ways
+-- a generic, text like version
+-- a not yet well tested SWARM message formatted handler
+
+* Working on:
+--> Figuring out where to handle the "not negotiated yet" for full swarm nodes
+--> Getting SSL back on protocols as an option 
+--> Getting some of the old swarm stuff into the new handlers or other plugins
+--> TCP buffering issue ... figuring out best way to handle incomplete messages in protocols ...
+    likely going to use the handler to validate ... maybe store ...
+--> Client interface ... so I can get back to talking Swarm nodes
+
+* Other notes:
+This plan is working really well.
+Example, I have a two servers running, with two lines of code, on one Node, using a combined
+message handler and hive (SqlLite) We will provide a config initiated full fledged server/client
+implementation that inits all the config'd service ports, hives, etc., and then a single "start"
+will spin up all servers, connect clients, and start processing registered handler process queues ...
+or ... a developer can build there own, using pieces like legos, plugging them in as needed etc.

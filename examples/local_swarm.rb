@@ -1,6 +1,10 @@
+# Project: SwarmP2P
+# @see https://github.com/dtrammell/swarm_p2p
+# @author Donovan A.
+#
 # Local swarm will spin up a test network of multiple drones a queen, setting different ports
 # automatically.
-
+#
 require "multi_daemons"
 require_relative "lib/swarm_p2pi.rb"
 
