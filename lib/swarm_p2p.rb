@@ -221,7 +221,7 @@ module SwarmP2P
     # load them from file, thus catching bad file writes as well.
 		if !Pathname.new( ssl.x509_private_key ).exist?
 			swwarn "No SSL private key found, creating..."
-			File.write( ssl.x509_private_key , OpenSSL::PKey::RSA.new( 1024 ).to_pem )
+			File.write( ssl.x509_private_key , OpenSSL::PKey::RSA.new( 2048 ).to_pem )
 		end
 		swdebug "Loading PKey #{ssl.x509_private_key}"
 		ssl.context.key = OpenSSL::PKey::RSA.new( File.read( ssl.x509_private_key ) )

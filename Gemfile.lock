@@ -1,3 +1,9 @@
+GIT
+  remote: https://github.com/sparklemotion/sqlite3-ruby
+  revision: 194493be44cd41b73e612eed69ba49354f0d32e7
+  specs:
+    sqlite3 (1.3.13.20180326210955)
+
 PATH
   remote: .
   specs:
@@ -7,7 +13,6 @@ PATH
       eventmachine (~> 1.x)
       recursive-open-struct (~> 1.1.3)
       sequel (~> 5.43.0)
-      sqlite3 (~> 1.4)
 
 GEM
   remote: https://rubygems.org/
@@ -17,15 +22,15 @@ GEM
     eventmachine (1.2.7)
     recursive-open-struct (1.1.3)
     sequel (5.43.0)
-    sqlite3 (1.4.2)
     yard (0.9.26)
 
 PLATFORMS
-  ruby
+  x86_64-linux
 
 DEPENDENCIES
+  sqlite3!
   swarm_p2p!
   yard (~> 0.9)
 
 BUNDLED WITH
-   2.1.4
+   2.2.21

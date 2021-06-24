@@ -31,6 +31,7 @@ def spinup(cnt=10,start=0)
 	cnt.times {|i|
 		bee = {}
 		cport = "353#{i + start + 1}"
+puts File.join(@data_dir,"test_hive_clients_#{cport}")
 		bee[:bee] = Bee.new(
 			host: "127.0.0.1",
 			port: cport,

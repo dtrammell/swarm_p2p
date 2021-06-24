@@ -18,6 +18,7 @@ P2P technology solution.
   s.homepage   = 'https://github.com/dtrammell/swarm_p2p'
   s.license    = 'MIT'
 	[
+# Comment out the below line for WSL2 install
 		['sqlite3','~> 1.4'],
 		['sequel','~> 5.43.0'],
 		['crypto-lite','~> 0.0.1'],
