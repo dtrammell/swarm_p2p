@@ -7,7 +7,8 @@
 # BeeCli - A client for testing against bee nodes.  Runs an IRB interface after it starts.
 # 
 #
-require 'irb'
+#require 'irb'
+require 'irbtools'
 load "./lib/swarm_p2p.rb"
 include SwarmP2P
 SwarmP2P::swarm_debug_log = false #true
@@ -31,7 +32,6 @@ def spinup(cnt=10,start=0)
 	cnt.times {|i|
 		bee = {}
 		cport = "353#{i + start + 1}"
-puts File.join(@data_dir,"test_hive_clients_#{cport}")
 		bee[:bee] = Bee.new(
 			host: "127.0.0.1",
 			port: cport,
@@ -78,7 +78,7 @@ end
 
 def i_got_mail(s,p,d)
 	d.content ||= "[Data empty from peer?!?!?]"
-  puts "\n------ Bee Node Custom handler! -------"
+  STDOUT.puts "------ Bee Node Custom handler! -------"
 	puts "From: #{p.host_id}, #{p.uuid}"
 	puts "Type: #{d.content_type}"
 	puts "Message (length:#{d.content.length}):"

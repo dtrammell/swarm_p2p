@@ -19,6 +19,7 @@ P2P technology solution.
   s.license    = 'MIT'
 	[
 # Comment out the below line for WSL2 install
+		['io-console','~> 0.5.9'],
 		['sqlite3','~> 1.4'],
 		['sequel','~> 5.43.0'],
 		['crypto-lite','~> 0.0.1'],

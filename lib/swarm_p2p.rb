@@ -70,6 +70,32 @@ module SwarmP2P
 		}],
 	}
 
+	def swamp
+		puts "lalalalal"
+		puts "hahaha"
+Thread.new {
+		puts "lalalalalalaasddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+swamp2
+		puts "lalalalalalaasddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+}
+Thread.new {
+		puts "lalalalalalaasddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+		puts "lalalalalalaasddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+}
+	end
+
+	def swamp2
+swamp3
+Thread.new {
+		swdebug("#{Time.now}::Debug::asddddddddddddddddddddddddddddddddddd")
+swamp3
+}
+	end
+
+	def swamp3
+		swdebug("#{Time.now}::Debug::asddddddddddddddddddddddddddddddddddd")
+	end
+
 	# Config Methods
 	#===========================================================================
 
